@@ -71,11 +71,10 @@ namespace GameInfo
 	// スタッフロールのクレジット（項目は増減できる）
 	const Array<std::pair<String, Array<String>>> Credits
 	{
-		{ L"ゲームデザイン",{ L"Hiragi-GKUTH" } },
-		{ L"プログラム",{ L"Hiragi-GKUTH" } },
-		{ L"ゲームアート",{ L"Hiragi-GKUTH" } },
-		{ L"音楽",{ L"Hiragi-GKUTH" } },
-		{ L"Special Thanks",{ L"You!" } },
+		{ L"ゲームデザイン",{ L"嶌岡柊也" } },
+		{ L"プログラム",{ L"嶌岡柊也" } },
+		{ L"ゲームアート",{ L"嶌岡柊也" } },
+		{ L"音楽",{ L"いろんなフリー素材" } },
 	};
 }
 
@@ -176,6 +175,8 @@ struct TaniEffect : IEffect{
 //
 struct GameData
 {
+	int32 dropped;
+	int32 get;
 	int32 lastScore = 0;
 	int32 mode = 0;
 };
@@ -188,6 +189,8 @@ using MyApp = SceneManager<String, GameData>;
 //
 struct ScoreData
 {
+	int32 dropped;
+	int32 get;
 	int32 score;
 	int32 mode;
 	Date date;
@@ -195,7 +198,7 @@ struct ScoreData
 	template <class Archive>
 	void serialize(Archive& archive)
 	{
-		archive(mode, score, date);
+		archive(mode,get,dropped,score,date);
 	}
 };
 
@@ -205,11 +208,11 @@ struct ScoreData
 //
 const std::array<ScoreData, 5> defaultHighScores
 {
-	ScoreData{ 50,1, Date(2017,1,1) },
-	ScoreData{ 40,1, Date(2017,1,1) },
-	ScoreData{ 30,1, Date(2017,1,1) },
-	ScoreData{ 20,1, Date(2017,1,1) },
-	ScoreData{ 10,1, Date(2017,1,1) },
+	ScoreData{ 1,23,3,50, Date(2017,1,1) },
+	ScoreData{ 1,23,3,40, Date(2017,1,1) },
+	ScoreData{ 1,23,3,30, Date(2017,1,1) },
+	ScoreData{ 1,23,3,20, Date(2017,1,1) },
+	ScoreData{ 1,23,3,10, Date(2017,1,1) },
 };
 ///////////////////////////////////////////////////////////////////////
 //
@@ -218,7 +221,7 @@ const std::array<ScoreData, 5> defaultHighScores
 class Title : public MyApp::Scene
 {
 private:
-
+	Texture m_title;
 	Effect m_effect;
 	Stopwatch m_effectBackgroundStopwatch{ true };
 	Stopwatch m_effectMenuItemStopwatch{ true };
@@ -260,6 +263,8 @@ public:
 
 		int32 boxWidth = 0;
 		flag = false;
+
+		m_title = Texture(L"img/title.png");
 
 		for (const auto& text : m_menuTexts)
 		{
@@ -346,18 +351,7 @@ public:
 
 				if (item.leftClicked)
 				{
-					if (i == 0)
-					{
-						m_data->mode = 0;
-					}
-					else if (i == 1)
-					{
-						m_data->mode = 1;
-					}
-					else if (i == 2)
-					{
-						m_data->mode = 2;
-					}
+					m_data->mode = i;
 					changeScene(L"Game");
 					break;
 				}
@@ -384,7 +378,7 @@ public:
 
 		const double titleHeight = FontAsset(L"Title")(GameInfo::Title).region().h;
 
-		FontAsset(L"Title")(GameInfo::Title).drawAt(Window::Center().x, titleHeight);
+		m_title.scale(0.8).drawAt(Window::Width() / 2, 150);
 
 		for (auto i : step(m_menuBoxes.size()))
 		{
@@ -428,8 +422,10 @@ private:
 		//ステージのパラメータ
 	typedef struct {
 		int cnt;
+		int time;
 		int appear_tani;
 		int dropped_tani;
+		int get_tani;
 		int m_score;
 		int interval;
 		int start;
@@ -459,9 +455,11 @@ public:
 	void init_stage(){
 		modeparam.appear_tani = 0;
 		modeparam.dropped_tani = 0;
+		modeparam.get_tani = 0;
 		modeparam.cnt = 0;
 		modeparam.m_score = 0;
 		modeparam.mode = m_data->mode;
+		modeparam.time = 4;
 		switch (modeparam.mode)
 		{
 			case 0: {
@@ -469,18 +467,21 @@ public:
 				modeparam.end = 30;
 				modeparam.grav = 0.03;
 				modeparam.StageName = L"Normal";
+				break;
 			}
 			case 1: {
 				modeparam.start = 45;
 				modeparam.end = 15;
 				modeparam.grav = 0.05;
 				modeparam.StageName = L"Hard";
+				break;
 			}
 			case 2: {
-				modeparam.start = 25;
+				modeparam.start = 32;
 				modeparam.end = 2;
 				modeparam.grav = 0.07;
 				modeparam.StageName = L"Lunatic";
+				break;
 			}
 		}
 		modeparam.interval = modeparam.start;
@@ -491,7 +492,7 @@ public:
 		modeparam.cnt++;
 
 			//単位の登録
-		if ((int)(Random()*modeparam.interval) == 0)
+		if ((int)(Random()*modeparam.interval) == 2 && modeparam.time > 0)
 		{
 			Tani push;
 			push.cnt = 0;
@@ -511,7 +512,7 @@ public:
 			if (n->cnt > 70) n->flag = true;
 			if (n->cnt > 120)
 			{
-				n->scr+=1-n->vel.y*2;
+				n->scr+=1-n->vel.y;
 				n->vel.y -= modeparam.grav;
 				n->pos.y -= n->vel.y;
 			}
@@ -520,9 +521,10 @@ public:
 			const bool r = col.mouseOver;
 			const bool c = col.leftClicked;
 				//画面外に出る=単位を落とす
-			if (n->pos.y - tani_img.height > Window::Height())
+			if (n->pos.y - tani_img.height/2 > Window::Height())
 			{
-				modeparam.m_score -= n->scr / 3;
+				n->pos.y -= 100;
+				modeparam.m_score -= n->scr / 2;
 				modeparam.dropped_tani++;
 				m_effect.add<TaniEffect>(4,n->pos);
 				n->hit = true;
@@ -532,7 +534,16 @@ public:
 			{
 				n->hit = true;
 				modeparam.m_score += n->scr;
-				
+				modeparam.get_tani++;
+				if (n->scr == 100)
+					m_effect.add<TaniEffect>(0, n->pos);
+				else if (100 < n->scr && n->scr < 300)
+					m_effect.add<TaniEffect>(1, n->pos);
+				else if (300 < n->scr && n->scr < 500)
+					m_effect.add<TaniEffect>(2, n->pos);
+				else
+					m_effect.add<TaniEffect>(3, n->pos);
+
 			}
 
 			if (n->hit)
@@ -542,9 +553,19 @@ public:
 
 		}
 			//単位の発生間隔の処理
-		if (modeparam.cnt > 200)
-			if (modeparam.cnt % 50 == 0)
-				modeparam.interval--;
+		if (modeparam.cnt%67 == 0 && modeparam.interval > modeparam.end) modeparam.interval--;
+
+			//経過時間の処理
+		if (modeparam.cnt % 60 == 0) modeparam.time--;
+
+			//ゲーム終了でスコア記録、結果画面へ
+		if (modeparam.time < -3) {
+			m_data->get = modeparam.get_tani;
+			m_data->dropped = modeparam.dropped_tani;
+			m_data->lastScore = modeparam.m_score;
+			m_data->mode = modeparam.mode;
+			changeScene(L"Result");
+		}
 		
 	}
 
@@ -562,7 +583,12 @@ public:
 			px16(n->scr).draw(n->pos);
 			n++;
 		}
-		FontAsset(L"GameTime")(Profiler::FPS()).draw(0, 0);
+		ClearPrint();
+		Println(Profiler::FPS() , L" FPS");
+		Println(L"Time:", modeparam.time);
+		Println(L"Interval:",modeparam.interval);
+		Println(L"Get:", modeparam.get_tani);
+		Println(L"Dropped:", modeparam.dropped_tani);
 	}
 };
 
@@ -573,7 +599,9 @@ public:
 class Result : public MyApp::Scene
 {
 private:
-
+	Texture ryunen;
+	Texture shinkyu;
+	int per;
 	std::array<ScoreData, 5> m_highScores = defaultHighScores;
 	const Circle titleButton = Circle(Window::Center().x - 300, Window::Height() * 0.7, 35);
 	const Circle tweetButton = Circle(Window::Center().x + 300, Window::Height() * 0.7, 35);
@@ -587,6 +615,7 @@ public:
 
 	void init() override
 	{
+		per = (float)m_data->get / (m_data->get + m_data->dropped) * 100;
 		if (FileSystem::Exists(GameInfo::SaveFilePath))
 		{
 			Deserializer<BinaryReader>{GameInfo::SaveFilePath}(m_highScores);
@@ -598,7 +627,7 @@ public:
 
 		if (m_highScores.back().score <= m_data->lastScore)
 		{
-			m_highScores.back() = { m_data->lastScore, 0,Date::Today() };
+			m_highScores.back() = { m_data->mode,m_data->get,m_data->dropped,m_data->lastScore, Date::Today() };
 
 			std::sort(m_highScores.begin(), m_highScores.end(), [](const ScoreData& a, const ScoreData& b)
 			{
@@ -607,6 +636,8 @@ public:
 
 			Serializer<BinaryWriter>{GameInfo::SaveFilePath}(m_highScores);
 		}
+		ryunen = Texture(L"img/ryunen.png");
+		shinkyu = Texture(L"img/shinkyu.png");
 	}
 
 	void update() override
@@ -618,7 +649,12 @@ public:
 
 		if (tweetButton.leftClicked)
 		{
-			const String tweetMessage = Format(GameInfo::TweetHead, m_data->lastScore, GameInfo::TweetTail);
+			String tweetMessage;
+
+			if(per < 75)
+				tweetMessage = Format(GameInfo::TweetHead, per, L" %の単位を修得！　結果は留年確定！！", GameInfo::TweetTail);
+			else
+				tweetMessage = Format(GameInfo::TweetHead, per, L" %の単位を修得！　結果は進級！！", GameInfo::TweetTail);
 
 			Twitter::OpenTweetWindow(tweetMessage);
 		}
@@ -632,11 +668,17 @@ public:
 	{
 
 		const double resultHeight = FontAsset(L"Result")(L"x", m_data->lastScore).region().h;
+		int txy = 40;
+		int tmgn = 40;
 
-		FontAsset(L"Result")(L"x", m_data->lastScore).draw(Window::Center().x + 50, Window::Height() * 0.4 - resultHeight / 2);
+		titleButton.draw();
+		tweetButton.draw();
 
+		FontAsset(L"ResultButton")(L"修得した単位数:", m_data->get).draw(txy,100+tmgn*0);
+		FontAsset(L"ResultButton")(L"落とした単位数:", m_data->dropped).draw(txy, 100 + tmgn * 1);
+		FontAsset(L"ResultButton")(L"修得率:", per,L"%").draw(txy, 100 + tmgn * 2);
+		FontAsset(L"ResultButton")(L"スコア:", m_data->lastScore).draw(txy, 100 + tmgn * 3);
 		FontAsset(L"ResultButton")(L"タイトルへ").drawAt(titleButton.center.movedBy(0, 90));
-
 		FontAsset(L"ResultButton")(L"結果をツイート").drawAt(tweetButton.center.movedBy(0, 90));
 	}
 };
@@ -803,8 +845,8 @@ void Main()
 	FontAsset::Register(L"Menu", GameInfo::MenuFontSize, Typeface::Bold);
 	FontAsset::Register(L"Version", 14, Typeface::Regular);
 	FontAsset::Register(L"CountDown", 72, Typeface::Bold);
-	FontAsset::Register(L"Result", 80, Typeface::Bold);
-	FontAsset::Register(L"ResultButton", 32, Typeface::Regular);
+	FontAsset::Register(L"Result", 64, Typeface::Bold);
+	FontAsset::Register(L"ResultButton", 20, Typeface::Regular);
 	FontAsset::Register(L"GameTime", 40, Typeface::Light);
 	FontAsset::Register(L"ScoreList", 50, Typeface::Heavy);
 	FontAsset::Register(L"ScoreListDate", 25, Typeface::Regular, FontStyle::Italic);
