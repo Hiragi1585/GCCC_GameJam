@@ -31,9 +31,9 @@ namespace GameInfo
 	const String WebURL = L"http://gcccweb.blog59.fc2.com/";
 
 	// 結果ツイートの文章（TweetHead + score + TweetTail)
-	const String TweetHead = L"ギリギリで救え！ をプレイしたよ。結果: ";
+	const String TweetHead = L"楽して単位欲しい！ をプレイしたよ。結果: ";
 
-	const String TweetTail = L" Points";
+	const String TweetTail = L"#楽して単位欲しい！";
 
 	// ゲームの背景色
 	const ColorF BackgroundColor = ColorF(0.4, 0.7, 0.5);
@@ -273,12 +273,12 @@ public:
 
 		for (auto i : step(m_menuBoxes.size()))
 		{
-			m_menuBoxes[i].set(120, 280 + i * 80, boxWidth + 80, 60);
+			m_menuBoxes[i].set(180, 280 + i * 80, boxWidth + 80, 60);
 		}
 
 		for (auto i : step(m_modeBoxes.size()))
 		{
-			m_modeBoxes[i].set(120 + boxWidth + 120, 280 + (i - 1) * 60, boxWidth, 50);
+			m_modeBoxes[i].set(180 + boxWidth + 120, 280 + (i - 1) * 60, boxWidth, 50);
 		}
 	}
 
@@ -378,7 +378,7 @@ public:
 
 		const double titleHeight = FontAsset(L"Title")(GameInfo::Title).region().h;
 
-		m_title.scale(0.8).drawAt(Window::Width() / 2, 150);
+		m_title.scale(0.8).drawAt(Window::Width() / 2, 120);
 
 		for (auto i : step(m_menuBoxes.size()))
 		{
@@ -459,7 +459,7 @@ public:
 		modeparam.cnt = 0;
 		modeparam.m_score = 0;
 		modeparam.mode = m_data->mode;
-		modeparam.time = 4;
+		modeparam.time = 40;
 		switch (modeparam.mode)
 		{
 			case 0: {
@@ -559,7 +559,7 @@ public:
 		if (modeparam.cnt % 60 == 0) modeparam.time--;
 
 			//ゲーム終了でスコア記録、結果画面へ
-		if (modeparam.time < -3) {
+		if (modeparam.time < 1) {
 			m_data->get = modeparam.get_tani;
 			m_data->dropped = modeparam.dropped_tani;
 			m_data->lastScore = modeparam.m_score;
@@ -583,6 +583,8 @@ public:
 			px16(n->scr).draw(n->pos);
 			n++;
 		}
+			//残り時間の描画
+		FontAsset(L"ResultBottun")(L"残り時間", 40-(modeparam.cnt / 60), L"秒").draw(20, 0, ColorF(1.0, 1.0, 1.0));
 		ClearPrint();
 		Println(Profiler::FPS() , L" FPS");
 		Println(L"Time:", modeparam.time);
@@ -602,6 +604,8 @@ private:
 	Texture ryunen;
 	Texture shinkyu;
 	int per;
+	bool clear;
+	String tweetMessage;
 	std::array<ScoreData, 5> m_highScores = defaultHighScores;
 	const Circle titleButton = Circle(Window::Center().x - 300, Window::Height() * 0.7, 35);
 	const Circle tweetButton = Circle(Window::Center().x + 300, Window::Height() * 0.7, 35);
@@ -636,6 +640,14 @@ public:
 
 			Serializer<BinaryWriter>{GameInfo::SaveFilePath}(m_highScores);
 		}
+		if (per < 75) {
+			tweetMessage = Format(GameInfo::TweetHead, per, L" %の単位を修得！　結果は留年確定！！",L"Score:",m_data->lastScore, GameInfo::TweetTail);
+			clear = false;
+		}
+		else {
+			tweetMessage = Format(GameInfo::TweetHead, per, L" %の単位を修得！　結果は進級！！",L"Score:",m_data->lastScore, GameInfo::TweetTail);
+			clear = true;
+		}
 		ryunen = Texture(L"img/ryunen.png");
 		shinkyu = Texture(L"img/shinkyu.png");
 	}
@@ -649,13 +661,6 @@ public:
 
 		if (tweetButton.leftClicked)
 		{
-			String tweetMessage;
-
-			if(per < 75)
-				tweetMessage = Format(GameInfo::TweetHead, per, L" %の単位を修得！　結果は留年確定！！", GameInfo::TweetTail);
-			else
-				tweetMessage = Format(GameInfo::TweetHead, per, L" %の単位を修得！　結果は進級！！", GameInfo::TweetTail);
-
 			Twitter::OpenTweetWindow(tweetMessage);
 		}
 
@@ -673,6 +678,10 @@ public:
 
 		titleButton.draw();
 		tweetButton.draw();
+		if (clear)
+			shinkyu.scale(1.5).drawAt(Window::Width() / 2, 350);
+		else
+			ryunen.scale(1.5).drawAt(Window::Width() / 2, 350);
 
 		FontAsset(L"ResultButton")(L"修得した単位数:", m_data->get).draw(txy,100+tmgn*0);
 		FontAsset(L"ResultButton")(L"落とした単位数:", m_data->dropped).draw(txy, 100 + tmgn * 1);
