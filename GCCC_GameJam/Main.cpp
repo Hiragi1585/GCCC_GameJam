@@ -19,8 +19,7 @@
 //
 //  ゲームの基本情報
 //
-namespace GameInfo
-{
+namespace GameInfo{
 	// ゲームのタイトル
 	const String Title = L"楽して単位欲しい！";
 
@@ -69,8 +68,7 @@ namespace GameInfo
 	const FilePath SaveFilePath = L"Save/Score.dat";
 
 	// スタッフロールのクレジット（項目は増減できる）
-	const Array<std::pair<String, Array<String>>> Credits
-	{
+	const Array<std::pair<String, Array<String>>> Credits{
 		{ L"ゲームデザイン",{ L"嶌岡柊也" } },
 		{ L"プログラム",{ L"嶌岡柊也" } },
 		{ L"ゲームアート",{ L"嶌岡柊也" } },
@@ -82,24 +80,21 @@ namespace GameInfo
 //
 //  タイトル画面の背景エフェクト
 //
-struct TitleBackGroundEffect : IEffect
-{
+struct TitleBackGroundEffect : IEffect{
 	Texture tx_eff;
 	Vec2 pos;
 	Vec2 vel;
 	double ang;
 	const double fv = 5.0;
 
-	TitleBackGroundEffect()
-	{
+	TitleBackGroundEffect(){
 		pos = Vec2(Random()*Window::Width(), Random()*Window::Height());
 		vel = Vec2((Random()-0.5)*fv, (Random()*0.5)*fv);
 		ang = Random()*3.14159 * 2;
 		tx_eff = Texture(L"img/Tani.png");
 	}
 
-	bool update(double timeSec)
-	{
+	bool update(double timeSec){
 		//Update
 		vel.y -= 0.1;
 		pos.y -= vel.y;
@@ -115,15 +110,13 @@ struct TitleBackGroundEffect : IEffect
 //
 //  タイトル画面のメニュー選択時のエフェクト
 //
-struct MenuEffect : IEffect
-{
+struct MenuEffect : IEffect{
 	Rect m_rect;
 
 	MenuEffect(const Rect& rect)
 		: m_rect(rect) {}
 
-	bool update(double timeSec)
-	{
+	bool update(double timeSec){
 		const double e = EaseOut<Easing::Quad>(timeSec);
 		RectF(m_rect).stretched(e * 20).shearedX(20).draw(ColorF(1.0-e,1.0-e,1.0,1.0-e));
 		return timeSec < 1.0;
@@ -142,8 +135,7 @@ struct TaniEffect : IEffect{
 	double scale;
 	Texture img[5];
 
-	TaniEffect(int argKind,Vec2 argPos)
-	{
+	TaniEffect(int argKind,Vec2 argPos){
 		kind = argKind;
 		pos = argPos;
 		pos.y -= 60;
@@ -154,13 +146,7 @@ struct TaniEffect : IEffect{
 		img[4] = Texture(L"img/effect/huka.png");
 	}
 
-	bool init()
-	{
-
-	}
-
-	bool update(double timeSec)
-	{
+	bool update(double timeSec){
 		pos.y++;
 		img[kind].rotate(Radians(10)).drawAt(pos,Color(255,255,255,255-timeSec*250));
 
@@ -173,8 +159,7 @@ struct TaniEffect : IEffect{
 //
 //  全てのシーンからアクセスできるデータ
 //
-struct GameData
-{
+struct GameData{
 	int32 dropped;
 	int32 get;
 	int32 lastScore = 0;
@@ -187,8 +172,7 @@ using MyApp = SceneManager<String, GameData>;
 //
 //  セーブ用スコアデータ
 //
-struct ScoreData
-{
+struct ScoreData{
 	int32 dropped;
 	int32 get;
 	int32 score;
@@ -196,8 +180,7 @@ struct ScoreData
 	Date date;
 
 	template <class Archive>
-	void serialize(Archive& archive)
-	{
+	void serialize(Archive& archive){
 		archive(mode,get,dropped,score,date);
 	}
 };
@@ -206,8 +189,7 @@ struct ScoreData
 //
 //  デフォルトのハイスコア
 //
-const std::array<ScoreData, 5> defaultHighScores
-{
+const std::array<ScoreData, 5> defaultHighScores{
 	ScoreData{ 1,23,3,50, Date(2017,1,1) },
 	ScoreData{ 1,23,3,40, Date(2017,1,1) },
 	ScoreData{ 1,23,3,30, Date(2017,1,1) },
@@ -218,8 +200,7 @@ const std::array<ScoreData, 5> defaultHighScores
 //
 //  タイトル画面
 //
-class Title : public MyApp::Scene
-{
+class Title : public MyApp::Scene{
 private:
 	Texture m_title;
 	Effect m_effect;
@@ -228,15 +209,15 @@ private:
 	Array<Rect> m_menuBoxes;
 	Array<Rect> m_modeBoxes;
 	int cnt;
-	Array<String> m_menuTexts =
-	{
+
+	Array<String> m_menuTexts ={
 		GameInfo::MenuGameStart,
 		GameInfo::MenuScore,
 		GameInfo::MenuCredit,
 		GameInfo::MenuExit,
 	};
-	Array<String> m_modeTexts =
-	{
+
+	Array<String> m_modeTexts ={
 		L"Normal",
 		L"Hard",
 		L"Lunatic",
@@ -245,18 +226,14 @@ private:
 
 public:
 
-	~Title()
-	{
+	~Title(){
 		Cursor::SetStyle(CursorStyle::Default);
 	}
 
-	void init() override
-	{
+	void init() override{
 		cnt = 0;
 		if (GameInfo::WebURL.isEmpty)
-		{
 			m_menuTexts.erase(m_menuTexts.begin() + 3);
-		}
 
 		m_menuBoxes.resize(m_menuTexts.size());
 		m_modeBoxes.resize(m_modeTexts.size());
@@ -267,90 +244,53 @@ public:
 		m_title = Texture(L"img/title.png");
 
 		for (const auto& text : m_menuTexts)
-		{
 			boxWidth = Max(boxWidth, FontAsset(L"Menu")(text).region().w);
-		}
 
 		for (auto i : step(m_menuBoxes.size()))
-		{
 			m_menuBoxes[i].set(180, 280 + i * 80, boxWidth + 80, 60);
-		}
 
 		for (auto i : step(m_modeBoxes.size()))
-		{
 			m_modeBoxes[i].set(180 + boxWidth + 120, 280 + (i - 1) * 60, boxWidth, 50);
-		}
 	}
 
-	void update() override
-	{
+	void update() override{
 		cnt++;
 		bool handCursor = false;
-		for (auto i : step(m_menuBoxes.size()))
-		{
+		for (auto i : step(m_menuBoxes.size())){
 			const Quad item = m_menuBoxes[i].shearedX(20);
 
 			handCursor |= item.mouseOver;
 
-			if (item.mouseOver)
-			{
+			if (item.mouseOver){
 				if (i == 0) {
 					flag = true; cnt = 0;
 				}
-				if (m_effectMenuItemStopwatch.elapsed() > 200ms)
-				{
+				if (m_effectMenuItemStopwatch.elapsed() > 200ms){
 					m_effect.add<MenuEffect>(m_menuBoxes[i]);
 					m_effectMenuItemStopwatch.restart();
 				}
 			}
-
-			if (!(item.mouseOver && i == 0) && cnt > 60)
-			{
-				//flag = false;
-			}
-
-			if (item.leftClicked)
-			{
-				if (i == 0)
-				{
-
-				}
-				else if (i == 1)
-				{
+			if (item.leftClicked){
+				if (i == 1)
 					changeScene(L"Score");
-				}
 				else if (i == 2)
-				{
 					changeScene(L"Credit");
-				}
 				else if (!GameInfo::WebURL.isEmpty && i == 3)
-				{
 					Internet::LaunchWebBrowser(GameInfo::WebURL);
-				}
-				else
-				{
-					System::Exit();
-				}
-
 				break;
 			}
 		}
 
-		if (flag)
-		{
-			for (auto i : step(m_modeBoxes.size()))
-			{
+		if (flag){
+			for (auto i : step(m_modeBoxes.size())){
 				const Quad item = m_modeBoxes[i].shearedX(20);
 
 				handCursor |= item.mouseOver;
 
 				if (item.mouseOver && System::FrameCount() % 10 == 0)
-				{
 					m_effect.add<MenuEffect>(m_modeBoxes[i]);
-				}
 
-				if (item.leftClicked)
-				{
+				if (item.leftClicked){
 					m_data->mode = i;
 					changeScene(L"Game");
 					break;
@@ -358,18 +298,15 @@ public:
 			}
 		}
 
-		if (m_effectBackgroundStopwatch.elapsed() > 50ms)
-		{
+		if (m_effectBackgroundStopwatch.elapsed() > 50ms){
 			m_effect.add<TitleBackGroundEffect>();
 
 			m_effectBackgroundStopwatch.restart();
 		}
-
 		Cursor::SetStyle(handCursor ? CursorStyle::Hand : CursorStyle::Default);
 	}
 
-	void draw() const override
-	{
+	void draw() const override{
 		Graphics2D::SetBlendState(BlendState::Additive);
 
 		m_effect.update();
@@ -380,16 +317,13 @@ public:
 
 		m_title.scale(0.8).drawAt(Window::Width() / 2, 120);
 
-		for (auto i : step(m_menuBoxes.size()))
-		{
+		for (auto i : step(m_menuBoxes.size())){
 			m_menuBoxes[i].shearedX(20).draw();
 
 			FontAsset(L"Menu")(m_menuTexts[i]).drawAt(m_menuBoxes[i].center, Color(40));
 		}
-		if (flag)
-		{
-			for (auto i : step(m_modeBoxes.size()))
-			{
+		if (flag){
+			for (auto i : step(m_modeBoxes.size())){
 				m_modeBoxes[i].shearedX(20).draw();
 				FontAsset(L"Menu")(m_modeTexts[i]).drawAt(m_modeBoxes[i].center, Color(40));
 			}
@@ -406,8 +340,7 @@ public:
 //
 //  ゲーム
 //
-class Game : public MyApp::Scene
-{
+class Game : public MyApp::Scene{
 private:
 		//単位が持つ情報
 	typedef struct {
@@ -487,13 +420,11 @@ public:
 		modeparam.interval = modeparam.start;
 	}
 
-	void update() override
-	{
+	void update() override{
 		modeparam.cnt++;
 
 			//単位の登録
-		if ((int)(Random()*modeparam.interval) == 2 && modeparam.time > 0)
-		{
+		if ((int)(Random()*modeparam.interval) == 2 && modeparam.time > 0){
 			Tani push;
 			push.cnt = 0;
 			push.pos = Vec2(Random()*Window::Width(), (Random()*Window::Height())*2/3);
@@ -505,13 +436,11 @@ public:
 			tani.push_back(push);
 		}
 			//単位の処理
-		for (auto n = tani.begin(); n != tani.end();)
-		{
+		for (auto n = tani.begin(); n != tani.end();){
 			n->cnt++;
 				//経過時間によって動作を変更する。
 			if (n->cnt > 70) n->flag = true;
-			if (n->cnt > 120)
-			{
+			if (n->cnt > 120){
 				n->scr+=1-n->vel.y;
 				n->vel.y -= modeparam.grav;
 				n->pos.y -= n->vel.y;
@@ -521,17 +450,15 @@ public:
 			const bool r = col.mouseOver;
 			const bool c = col.leftClicked;
 				//画面外に出る=単位を落とす
-			if (n->pos.y - tani_img.height/2 > Window::Height())
-			{
+			if (n->pos.y - tani_img.height/2 > Window::Height()){
 				n->pos.y -= 100;
-				modeparam.m_score -= n->scr / 2;
+				modeparam.m_score -= n->scr / 4;
 				modeparam.dropped_tani++;
 				m_effect.add<TaniEffect>(4,n->pos);
 				n->hit = true;
 			}
 				//単位をクリックできたら消してスコア加算
-			if (c)
-			{
+			if (c){
 				n->hit = true;
 				modeparam.m_score += n->scr;
 				modeparam.get_tani++;
@@ -553,10 +480,12 @@ public:
 
 		}
 			//単位の発生間隔の処理
-		if (modeparam.cnt%67 == 0 && modeparam.interval > modeparam.end) modeparam.interval--;
+		if (modeparam.cnt%67 == 0 && modeparam.interval > modeparam.end)
+			modeparam.interval--;
 
 			//経過時間の処理
-		if (modeparam.cnt % 60 == 0) modeparam.time--;
+		if (modeparam.cnt % 60 == 0)
+			modeparam.time--;
 
 			//ゲーム終了でスコア記録、結果画面へ
 		if (modeparam.time < 1) {
@@ -569,28 +498,27 @@ public:
 		
 	}
 
-	void draw() const override
-	{
+	void draw() const override{
 		m_effect.update();
 			//単位の描画
-		for (auto n = tani.begin(); n != tani.end();)
-		{
+		for (auto n = tani.begin(); n != tani.end();){
 			if(n->flag)
 				tani_img.drawAt(n->pos+RandomVec2(2.0));
 			else
 				tani_img.drawAt(n->pos);
-
-			px16(n->scr).draw(n->pos);
 			n++;
 		}
 			//残り時間の描画
 		FontAsset(L"ResultBottun")(L"残り時間", 40-(modeparam.cnt / 60), L"秒").draw(20, 0, ColorF(1.0, 1.0, 1.0));
+		FontAsset(L"ResultBottun")(L"スコア",modeparam.m_score, L" Point").draw(20, 30, ColorF(1.0, 1.0, 1.0));
 		ClearPrint();
+		/*
 		Println(Profiler::FPS() , L" FPS");
 		Println(L"Time:", modeparam.time);
 		Println(L"Interval:",modeparam.interval);
 		Println(L"Get:", modeparam.get_tani);
 		Println(L"Dropped:", modeparam.dropped_tani);
+		*/
 	}
 };
 
@@ -598,8 +526,7 @@ public:
 //
 //  結果画面
 //
-class Result : public MyApp::Scene
-{
+class Result : public MyApp::Scene{
 private:
 	Texture ryunen;
 	Texture shinkyu;
@@ -613,25 +540,18 @@ private:
 
 public:
 
-	~Result()
-	{
+	~Result(){
 		Cursor::SetStyle(CursorStyle::Default);
 	}
 
-	void init() override
-	{
+	void init() override{
 		per = (float)m_data->get / (m_data->get + m_data->dropped) * 100;
 		if (FileSystem::Exists(GameInfo::SaveFilePath))
-		{
 			Deserializer<BinaryReader>{GameInfo::SaveFilePath}(m_highScores);
-		}
 		else
-		{
 			Serializer<BinaryWriter>{GameInfo::SaveFilePath}(m_highScores);
-		}
 
-		if (m_highScores.back().score <= m_data->lastScore)
-		{
+		if (m_highScores.back().score <= m_data->lastScore){
 			m_highScores.back() = { m_data->mode,m_data->get,m_data->dropped,m_data->lastScore, Date::Today() };
 
 			std::sort(m_highScores.begin(), m_highScores.end(), [](const ScoreData& a, const ScoreData& b)
@@ -653,25 +573,19 @@ public:
 		shinkyu = Texture(L"img/shinkyu.png");
 	}
 
-	void update() override
-	{
+	void update() override{
 		if (titleButton.leftClicked || Input::KeyEscape.clicked)
-		{
 			changeScene(L"Title");
-		}
 
 		if (tweetButton.leftClicked)
-		{
 			Twitter::OpenTweetWindow(tweetMessage);
-		}
 
 		const bool handCursor = titleButton.mouseOver || tweetButton.mouseOver;
 
 		Cursor::SetStyle(handCursor ? CursorStyle::Hand : CursorStyle::Default);
 	}
 
-	void draw() const override
-	{
+	void draw() const override{
 
 		const double resultHeight = FontAsset(L"Result")(L"x", m_data->lastScore).region().h;
 		int txy = 40;
@@ -697,40 +611,29 @@ public:
 //
 //  ハイスコア一覧
 //
-class Score : public MyApp::Scene
-{
+class Score : public MyApp::Scene{
 private:
 
 	std::array<ScoreData, 5> m_highScores = defaultHighScores;
 
 public:
 
-	void init() override
-	{
+	void init() override{
 		if (FileSystem::Exists(GameInfo::SaveFilePath))
-		{
 			Deserializer<BinaryReader>{GameInfo::SaveFilePath}(m_highScores);
-		}
 		else
-		{
 			Serializer<BinaryWriter>{GameInfo::SaveFilePath}(m_highScores);
-		}
 	}
 
-	void update() override
-	{
+	void update() override{
 		if ((Input::MouseL | Input::KeyEscape).clicked)
-		{
 			changeScene(L"Title");
-		}
 	}
 
-	void draw() const override
-	{
+	void draw() const override{
 		const int32 h = FontAsset(L"ScoreList").height;
 
-		for (auto i : step(m_highScores.size()))
-		{
+		for (auto i : step(m_highScores.size())){
 			const Rect rect = Rect(520, 100).setCenter(Window::Center().x, 120 + i * 120);
 
 			rect.draw(ColorF(1.0, 0.2));
@@ -746,8 +649,7 @@ public:
 			FontAsset(L"ScoreListDate")(m_highScores[i].date)
 				.draw(rect.br.x - dateSize.x - 40, rect.center.y - dateSize.y / 2);
 
-			for (auto k : step(5 - i))
-			{
+			for (auto k : step(5 - i)){
 				const Point left(rect.center.movedBy(-rect.w / 2 - 40 - k * 50, 0));
 				const Point right(rect.center.movedBy(rect.w / 2 + 40 + k * 50, 0));
 
@@ -762,8 +664,7 @@ public:
 //
 //  スタッフクレジット
 //
-class Credit : public MyApp::Scene
-{
+class Credit : public MyApp::Scene{
 private:
 
 	Array<std::tuple<String, double, bool>> m_credits;
@@ -772,52 +673,40 @@ private:
 
 	Stopwatch m_stopwatch{ true };
 
-	double yOffset() const
-	{
+	double yOffset() const{
 		return Window::Height() + 60 - m_stopwatch.ms() / 20.0;
 	}
 public:
 
-	void init()
-	{
+	void init(){
 		double y = 0;
 
-		for (const auto& credit : GameInfo::Credits)
-		{
+		for (const auto& credit : GameInfo::Credits){
 			m_credits.emplace_back(credit.first, y, true);
 			y += 70;
 
-			for (const auto& name : credit.second)
-			{
+			for (const auto& name : credit.second){
 				m_credits.emplace_back(name, y, false);
 				y += 60;
 			}
-
 			y += 60;
 		}
 
 		m_height = y;
 	}
 
-	void update() override
-	{
+	void update() override{
 		if ((Input::MouseL | Input::KeyEscape).clicked)
-		{
 			changeScene(L"Title");
-		}
 
 		if ((m_height + yOffset()) < 0)
-		{
 			m_stopwatch.restart();
-		}
 	}
 
-	void draw() const override
-	{
+	void draw() const override{
 		const double offset = yOffset();
 
-		for (const auto& credit : m_credits)
-		{
+		for (const auto& credit : m_credits){
 			FontAsset(std::get<bool>(credit) ? L"CreditBig" : L"CreditSmall")(std::get<String>(credit))
 				.drawAt(Window::Center().x, std::get<double>(credit) + offset);
 		}
@@ -828,8 +717,7 @@ public:
 //
 //  メイン関数
 //
-void Main()
-{
+void Main(){
 	Window::Resize(1280, 720);
 	Window::SetTitle(GameInfo::Title);
 	Graphics::SetBackground(GameInfo::BackgroundColor);
@@ -867,11 +755,8 @@ void Main()
 	//
 	//  メインループ
 	//
-	while (System::Update())
-	{
+	while (System::Update()){
 		if (!manager.updateAndDraw())
-		{
 			break;
-		}
 	}
 }
