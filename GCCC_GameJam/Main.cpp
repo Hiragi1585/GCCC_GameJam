@@ -22,7 +22,7 @@
 namespace GameInfo
 {
 	// ゲームのタイトル
-	const String Title = L"ギリギリで救え！！！";
+	const String Title = L"楽して単位欲しい！";
 
 	// ゲームのバージョン（空の文字列も OK）
 	const String Version = L"Ver 1.14514";
@@ -604,6 +604,7 @@ private:
 	Texture ryunen;
 	Texture shinkyu;
 	int per;
+	const int border = 80;
 	bool clear;
 	String tweetMessage;
 	std::array<ScoreData, 5> m_highScores = defaultHighScores;
@@ -640,7 +641,7 @@ public:
 
 			Serializer<BinaryWriter>{GameInfo::SaveFilePath}(m_highScores);
 		}
-		if (per < 75) {
+		if (per < border) {
 			tweetMessage = Format(GameInfo::TweetHead, per, L" %の単位を修得！　結果は留年確定！！",L"Score:",m_data->lastScore, GameInfo::TweetTail);
 			clear = false;
 		}
