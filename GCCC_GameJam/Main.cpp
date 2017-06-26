@@ -127,7 +127,6 @@ struct MenuEffect : IEffect{
 //
 //  単位を修得、落とす時のエフェクト
 //
-
 struct TaniEffect : IEffect{
 	int kind;
 	String text;
@@ -746,8 +745,8 @@ void Main(){
 	FontAsset::Register(L"Result", 64, Typeface::Bold);
 	FontAsset::Register(L"ResultButton", 20, Typeface::Regular);
 	FontAsset::Register(L"GameTime", 40, Typeface::Light);
-	FontAsset::Register(L"ScoreList", 50, Typeface::Heavy);
-	FontAsset::Register(L"ScoreListDate", 25, Typeface::Regular, FontStyle::Italic);
+	FontAsset::Register(L"ScoreList", 25, Typeface::Heavy);
+	FontAsset::Register(L"ScoreListDate", 16, Typeface::Regular, FontStyle::Italic);
 	FontAsset::Register(L"CreditBig", 32, Typeface::Bold);
 	FontAsset::Register(L"CreditSmall", 28, Typeface::Regular);
 
