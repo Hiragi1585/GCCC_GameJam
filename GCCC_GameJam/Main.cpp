@@ -163,6 +163,7 @@ struct GameData{
 	int32 get;
 	int32 lastScore = 0;
 	int32 mode = 0;
+	bool clear;
 };
 
 using MyApp = SceneManager<String, GameData>;
@@ -172,15 +173,16 @@ using MyApp = SceneManager<String, GameData>;
 //  セーブ用スコアデータ
 //
 struct ScoreData{
-	int32 dropped;
-	int32 get;
-	int32 score;
 	int32 mode;
+	int32 get;
+	int32 dropped;
+	int32 score;
+	bool clear;
 	Date date;
 
 	template <class Archive>
 	void serialize(Archive& archive){
-		archive(mode,get,dropped,score,date);
+		archive(mode,get,dropped,score,clear,date);
 	}
 };
 
@@ -189,11 +191,11 @@ struct ScoreData{
 //  デフォルトのハイスコア
 //
 const std::array<ScoreData, 5> defaultHighScores{
-	ScoreData{ 1,23,3,50, Date(2017,1,1) },
-	ScoreData{ 1,23,3,40, Date(2017,1,1) },
-	ScoreData{ 1,23,3,30, Date(2017,1,1) },
-	ScoreData{ 1,23,3,20, Date(2017,1,1) },
-	ScoreData{ 1,23,3,10, Date(2017,1,1) },
+	ScoreData{ 2,190,3,43000,true, Date(2017,1,1) },
+	ScoreData{ 1,110,2,31000,true, Date(2017,1,1) },
+	ScoreData{ 1,100,12,28000,true, Date(2017,1,1) },
+	ScoreData{ 1,58,0,20000,true, Date(2017,1,1) },
+	ScoreData{ 0,20,23,16000,false, Date(2017,1,1) },
 };
 ///////////////////////////////////////////////////////////////////////
 //
@@ -492,6 +494,7 @@ public:
 			m_data->dropped = modeparam.dropped_tani;
 			m_data->lastScore = modeparam.m_score;
 			m_data->mode = modeparam.mode;
+			m_data->clear = (modeparam.get_tani / (modeparam.get_tani + modeparam.dropped_tani)) > 0.80f ? true : false;
 			changeScene(L"Result");
 		}
 		
@@ -545,13 +548,14 @@ public:
 
 	void init() override{
 		per = (float)m_data->get / (m_data->get + m_data->dropped) * 100;
+
 		if (FileSystem::Exists(GameInfo::SaveFilePath))
 			Deserializer<BinaryReader>{GameInfo::SaveFilePath}(m_highScores);
 		else
 			Serializer<BinaryWriter>{GameInfo::SaveFilePath}(m_highScores);
 
 		if (m_highScores.back().score <= m_data->lastScore){
-			m_highScores.back() = { m_data->mode,m_data->get,m_data->dropped,m_data->lastScore, Date::Today() };
+			m_highScores.back() = { m_data->mode,m_data->get,m_data->dropped,m_data->lastScore, m_data->clear,Date::Today() };
 
 			std::sort(m_highScores.begin(), m_highScores.end(), [](const ScoreData& a, const ScoreData& b)
 			{
@@ -614,6 +618,8 @@ class Score : public MyApp::Scene{
 private:
 
 	std::array<ScoreData, 5> m_highScores = defaultHighScores;
+	Texture get;
+	Texture drop;
 
 public:
 
@@ -622,6 +628,8 @@ public:
 			Deserializer<BinaryReader>{GameInfo::SaveFilePath}(m_highScores);
 		else
 			Serializer<BinaryWriter>{GameInfo::SaveFilePath}(m_highScores);
+		get = Texture(L"img/shinkyu.png");
+		drop = Texture(L"img/ryunen.png");
 	}
 
 	void update() override{
@@ -633,15 +641,24 @@ public:
 		const int32 h = FontAsset(L"ScoreList").height;
 
 		for (auto i : step(m_highScores.size())){
-			const Rect rect = Rect(520, 100).setCenter(Window::Center().x, 120 + i * 120);
+			const Rect rect = Rect(750, 100).setCenter(Window::Center().x, 120 + i * 120);
 
 			rect.draw(ColorF(1.0, 0.2));
 
-			FontAsset(L"ScoreList")(m_highScores[i].score)
-				.draw(rect.pos + Point(42, (rect.h - h) / 2 + 2), Palette::Gray);
+				//文字の描画
+			switch (m_highScores[i].mode) {
+				case 0: FontAsset(L"ScoreList")(L"Normal").draw(rect.pos,Palette::Aquamarine); break;
+				case 1: FontAsset(L"ScoreList")(L"Hard").draw(rect.pos,Palette::Coral); break;
+				case 2: FontAsset(L"ScoreList")(L"Lunatic").draw(rect.pos,Palette::Purple); break;
+				default: FontAsset(L"ScoreList")(L"Error").draw(rect.pos); break;
+			}
+			FontAsset(L"ScoreList")(L"Score:",m_highScores[i].score).draw(rect.pos.x+30,rect.pos.y+24+h/2);
 
-			FontAsset(L"ScoreList")(m_highScores[i].score)
-				.draw(rect.pos + Point(40, (rect.h - h) / 2));
+				//結果の描画
+			if (m_highScores[i].clear)
+				get.scale(0.6).drawAt(rect.pos.x + 420,rect.pos.y+h);
+			else
+				drop.scale(0.6).drawAt(rect.pos.x + 420, rect.pos.y + h);
 
 			const Size dateSize = FontAsset(L"ScoreListDate")(m_highScores[i].date).region().size;
 
